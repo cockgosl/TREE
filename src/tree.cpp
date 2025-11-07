@@ -24,32 +24,6 @@ void PRINTG_NODE (NODE_t* node, FILE* output);
 void TREE_INIT (TREE_t* tree, ELEM_t value);
 
 int main() {
-    TREE_t tree1;
-    TREE_INIT (&tree1, 10);
-    NODE_CREATE (&tree1, 5);
-    NODE_CREATE (&tree1, 20);
-    NODE_CREATE (&tree1, 3);
-    NODE_CREATE (&tree1, 7);
-    NODE_CREATE (&tree1, 15);
-    NODE_CREATE (&tree1, 13);
-    NODE_CREATE (&tree1, 16);
-    NODE_CREATE (&tree1, 6);
-
-    NODE_DELETE (tree1.root->left);
-
-    FILE* output = fopen ("g.gv", "wr");
-    FILE* output1 = fopen ("g.gv1", "wr");
-
-    PRINTG_NODE(tree1.root , output);
-    PRINTG_NODE(tree1.root->right , output1);
-
-    fclose (output);
-    fclose (output1);
-
-    PRINT_NODE (tree1.root);
-
-    NODE_DELETE (tree1.root);//срубили под корень
-
     return 0;
 }
 
@@ -190,5 +164,6 @@ void TREE_INIT (TREE_t* tree, ELEM_t value) {
         printf ("memory cannot be allocated\n");
     }
 }
+
 
 
