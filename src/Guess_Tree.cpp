@@ -28,37 +28,7 @@ void NODE_DELETE (NODE_t* node);
 void PRINTF_IN_DOT (NODE_t* node, FILE* output);
 
 int main() {
-    TREE_t tree1 = {};
-    //TREE_INIT (&tree1);
-    size_t sign = 0;
-
-    FILE* input = fopen ("dump_inf/text.txt", "r");
-
-    char* current_pose = READ_BUFFER(input);
-
-    char* temp = current_pose;
-
-    tree1.root = NODE_READ (&current_pose, input);
-
-    free (temp);
-
-    fclose (input);
-
-    LETS_PLAY(&tree1, tree1.root, &sign);
-
-    FILE* output = fopen ("dump_inf/g.gv", "wr");
-
-    PRINTG_NODE(tree1.root , output);
-
-    fclose (output);
-
-    FILE* output1 = fopen ("dump_inf/text.txt", "wr");
-
-    PRINT_NODE (tree1.root, output1);
-
-    fclose (output1);
-
-    NODE_DELETE (tree1.root);
+    return 0;
 }
 
 void TREE_INIT (TREE_t* tree) {
@@ -351,4 +321,5 @@ char* READ_BUFFER (FILE* text) {
     }
     
     return buffer;   
+
 }
