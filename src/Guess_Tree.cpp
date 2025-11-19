@@ -28,20 +28,54 @@ void NODE_DELETE (NODE_t* node);
 void PRINTF_IN_DOT (NODE_t* node, FILE* output);
 
 int main() {
-   return 0;
+    TREE_t tree1 = {};
+    //TREE_INIT (&tree1);
+    size_t sign = 0;
+
+    FILE* input = fopen ("dump_inf/text.txt", "r");
+
+    char* current_pose = READ_BUFFER(input);
+
+    char* temp = current_pose;
+
+    tree1.root = NODE_READ (&current_pose, input);
+
+    free (temp);
+
+    fclose (input);
+
+    LETS_PLAY(&tree1, tree1.root, &sign);
+
+    FILE* output = fopen ("dump_inf/g.gv", "wr");
+
+    PRINTG_NODE(tree1.root , output);
+
+    fclose (output);
+
+    FILE* output1 = fopen ("dump_inf/text.txt", "wr");
+
+    PRINT_NODE (tree1.root, output1);
+
+    fclose (output1);
+
+    NODE_DELETE (tree1.root);
 }
 
 void TREE_INIT (TREE_t* tree) {
     tree->root = (NODE_t*) calloc (1 , sizeof(NODE_t));
-    tree->root->yes = NULL;
-    tree->root->no = NULL;
-    strcpy (tree->root->question, "is it nothing?\n");  
+    if (tree->root) {
+        tree->root->yes = NULL;
+        tree->root->no = NULL;
+        strcpy (tree->root->question, "is it nothing?\n");
+    }
+    else {
+        fprintf (stderr, "memory cannot be allocated\n");
+        assert (tree->root);
+    }  
 }
 
 void LETS_PLAY (TREE_t* tree, NODE_t* node, size_t* sign) {    
-
     char buffer[100] = {};
-
 
     for (; *sign != 1;) {
 
@@ -83,20 +117,16 @@ void LETS_PLAY (TREE_t* tree, NODE_t* node, size_t* sign) {
 }
 
 void NODE_CREATE (NODE_t* node) {
-
-
     if (node) {
-
-
-        node->no = (NODE_t*) calloc (1, sizeof (NODE_t));
+        node->no = (NODE_t*)calloc (1, sizeof (NODE_t));
         if (node->no) {
             node->no->prev = node;
+            strcpy (node->no->question, node->question);
         }
         else {
             fprintf (stderr, "Memory cannot be allocated\n");
+            assert(node->no);
         }
-
-        strcpy (node->no->question, node->question);
 
         printf ("Then how would you differ it with question?\n");
 
@@ -119,14 +149,13 @@ void NODE_CREATE (NODE_t* node) {
 
             printf ("Well, what is the right answer?\n");
 
-
             if (fgets(node->yes->question, sizeof(node->yes->question), stdin) != NULL) {
                 ;
             }   
         }
         else {
             fprintf (stderr, "memory cannot be allocated\n");
-            abort();
+            assert (node->yes);
         }
     }
     else {
@@ -212,7 +241,6 @@ void PRINTG_NODE (NODE_t* node, FILE* output) {
             fprintf(output, "   \"%p\"->\"%p\"\n", node, node->yes);
         }
 
-
         if (node->no == NULL) {
             fprintf(output, "   \"%d\" [shape = doublecircle , color = \"black\", label=\" empty \"];\n", temp );
             fprintf(output, "   \"%p\"->\"%d\"\n", node, temp);
@@ -260,11 +288,9 @@ NODE_t* NODE_READ (char** current_pose, FILE* text) {
         if (**current_pose == '\"') {
             *current_pose += sizeof(char);
 
-
             NODE_t* node = (NODE_t*) calloc (1, sizeof (NODE_t));
 
             if (node) {
-
 
                 sscanf(*current_pose, "%199[^\"]", node->question);
 
@@ -272,11 +298,9 @@ NODE_t* NODE_READ (char** current_pose, FILE* text) {
 
                 node->yes = NODE_READ (current_pose, text);
 
-
                 if (node->yes) {
                     node->yes->prev = node;
                 }
-
 
                 node->no = NODE_READ (current_pose, text);
 
@@ -286,7 +310,7 @@ NODE_t* NODE_READ (char** current_pose, FILE* text) {
             }
             else {
                 fprintf (stderr, "memory cannot be allocated");
-                abort();
+                assert(node);
             }
 
             return node;
@@ -323,9 +347,8 @@ char* READ_BUFFER (FILE* text) {
     }
     else {
         fprintf (stderr, "memory cannot be allocated");
-        abort();
+        assert(buffer);
     }
     
     return buffer;   
-
 }
