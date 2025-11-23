@@ -58,41 +58,6 @@ void NODE_DELETE (NODE_t* node);
 void PRINT_NODE (NODE_t* node, FILE* output);
 
 int main () {
-    TREE_t tree1 = {};
-    double solution1 = NAN;
-
-    FILE* input = fopen ("dump_inf/equation.txt", "r");
-
-    char* current_pose = READ_BUFFER(input);
-
-    char* temp = current_pose;
-
-    tree1.root = NODE_READ (&tree1, &current_pose, input);
-
-    tree1.variables[0] = 10;
-    tree1.variables[1] = 5;
-
-    solution1 = TREE_SOLVE (&tree1, tree1.root);
-
-    printf ("SOLUTION: %lf\n", solution1);
-
-    free (temp);
-
-    fclose (input);
-
-    FILE* output = fopen ("dump_inf/g.gv", "wr");
-
-    PRINTG_NODE(tree1.root , output);
-
-    fclose (output);
-
-    FILE* output1 = fopen ("dump_inf/text.txt", "wr");
-
-    PRINT_NODE (tree1.root, output1);
-
-    fclose (output1);
-
-    NODE_DELETE (tree1.root);
     return 0;
 }
 
@@ -321,15 +286,6 @@ double TREE_SOLVE (TREE_t* tree, NODE_t* node) {
             case (POW):
                 solution = pow(TREE_SOLVE(tree, node->left), TREE_SOLVE(tree, node->right));
                 break; 
-    /*ADD = '+',
-    SUB = '-',
-    MUL = '*',
-    DIV = '/',
-    SIN = 's',
-    COS = 'c',
-    TG = 't',
-    LOG = 'l',
-    POW = '^',*/
         }
     }
     else if (node->type == 1) {
@@ -340,4 +296,5 @@ double TREE_SOLVE (TREE_t* tree, NODE_t* node) {
     }
     return solution;
 }
+
 
