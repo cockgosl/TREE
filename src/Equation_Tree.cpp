@@ -61,46 +61,6 @@ void PRINT_NODE (NODE_t* node, FILE* output);
 NODE_t* COPY_NODE (NODE_t* node);
 
 int main () {
-    TREE_t tree1 = {};
-    TREE_t tree1d = {};
-    double solution1 = NAN;
-
-    FILE* input = fopen ("dump_inf/equation.txt", "r");
-
-    char* current_pose = READ_BUFFER(input);
-
-    char* temp = current_pose;
-
-    tree1.root = NODE_READ (&tree1, &current_pose, input);
-    tree1d.root = TREE_DIFFERENTIATE (tree1, tree1.root, 'x');
-
-    tree1d.variables[0] = 10;
-    tree1d.variables[1] = 34;
-    tree1d.variables[2] = 25;
-
-    solution1 = TREE_SOLVE (&tree1d, tree1d.root);
-
-    printf ("SOLUTION: %lf\n", solution1);
-
-    free (temp);
-
-    fclose (input);
-
-    FILE* output = fopen ("dump_inf/g.gv1", "wr");
-
-    PRINTG_NODE(tree1.root , output);
-
-    fclose (output);
-
-    FILE* output1 = fopen ("dump_inf/text.txt", "wr");
-
-    PRINT_NODE (tree1d.root, output1);
-
-    fclose (output1);
-
-    NODE_DELETE (tree1.root);
-    NODE_DELETE (tree1d.root);
-
     return 0;
 }
 
@@ -477,4 +437,5 @@ NODE_t* COPY_NODE (NODE_t* node) {
         node_c->right->prev = node_c;
     }
     return (node_c);
+
 }
