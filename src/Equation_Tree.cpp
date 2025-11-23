@@ -381,24 +381,6 @@ NODE_t* TREE_DIFFERENTIATE (TREE_t tree, NODE_t* node, char variable) {
                 new_node->left = TREE_DIFFERENTIATE (tree, node->left, variable);
                 new_node->right = TREE_DIFFERENTIATE (tree, node->right, variable);
                 break;
-            /*case (DIV) :
-                solution = TREE_SOLVE(tree, node->left) / TREE_SOLVE(tree, node->right);
-                break;
-            case (POW):
-                solution = pow(TREE_SOLVE(tree, node->left), TREE_SOLVE(tree, node->right));
-                break;
-            case (SIN):
-                solution = sin(TREE_SOLVE(tree, node->left));
-                break;
-            case (COS):
-                solution = cos(TREE_SOLVE(tree, node->left));
-                break;
-            case (TG) :
-                solution = tan(TREE_SOLVE(tree, node->left));
-                break;
-            case (LOG) :
-                solution = log(TREE_SOLVE(tree, node->left));
-                break;*/
         }
     }
     if (new_node->left) {
@@ -439,3 +421,4 @@ NODE_t* COPY_NODE (NODE_t* node) {
     return (node_c);
 
 }
+
