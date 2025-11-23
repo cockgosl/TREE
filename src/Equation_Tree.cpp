@@ -78,14 +78,11 @@ NODE_t* NODE_READ (TREE_t* tree, char** current_pose, FILE* text) {
     if (**current_pose == '(') {
         char buffer[10] = {};
         char temp[] = "+-*/sctl^";
-
         *current_pose += sizeof(char);
-
         NODE_t* node = (NODE_t*) calloc (1, sizeof (NODE_t));
         assert (node);
         
         sscanf(*current_pose, "%9[^(]", buffer);
-
         if (isdigit(*buffer)) {
             node->type = NUM_T;
             sscanf (buffer, "%lf", &(node->value.value)); 
@@ -122,21 +119,15 @@ NODE_t* NODE_READ (TREE_t* tree, char** current_pose, FILE* text) {
                 }
             }
         }
-
         *current_pose += strlen (buffer);
-
         node->left = NODE_READ (tree, current_pose, text);
-
         if (node->left) {
             node->left->prev = node;
         }
-
         node->right = NODE_READ (tree, current_pose, text);
-
         if (node->right) {
             node->right->prev = node;
         }
-
         return node;
     }
     return NULL;
@@ -144,17 +135,13 @@ NODE_t* NODE_READ (TREE_t* tree, char** current_pose, FILE* text) {
 
 char* READ_BUFFER (FILE* text) {
     assert (text);
-
+    
     size_t size = 0;
-
     struct stat statistic = {};
-
     char* buffer = NULL;
     int descriptor = fileno(text); 
     fstat (descriptor, &statistic);    
-
     size = statistic.st_size;
-
     buffer = (char*) calloc (sizeof (char), size + sizeof(char));
     if (buffer) {
         buffer[size] = '\0';
@@ -419,6 +406,6 @@ NODE_t* COPY_NODE (NODE_t* node) {
         node_c->right->prev = node_c;
     }
     return (node_c);
-
 }
+
 
