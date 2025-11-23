@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <ctype.h>
 #include <math.h>
+#include <float.h>
 
 enum TYPE {
     OP_T = 0,
@@ -54,10 +55,52 @@ void PRINTF_IN_DOT (NODE_t* node, FILE* output);
 void PRINTG_NODE (NODE_t* node, FILE* output);
 char* READ_BUFFER (FILE* text);
 double TREE_SOLVE (TREE_t* tree, NODE_t* node);
+NODE_t* TREE_DIFFERENTIATE (TREE_t tree, NODE_t* node, char variable);
 void NODE_DELETE (NODE_t* node);
 void PRINT_NODE (NODE_t* node, FILE* output);
+NODE_t* COPY_NODE (NODE_t* node);
 
 int main () {
+    TREE_t tree1 = {};
+    TREE_t tree1d = {};
+    double solution1 = NAN;
+
+    FILE* input = fopen ("dump_inf/equation.txt", "r");
+
+    char* current_pose = READ_BUFFER(input);
+
+    char* temp = current_pose;
+
+    tree1.root = NODE_READ (&tree1, &current_pose, input);
+    tree1d.root = TREE_DIFFERENTIATE (tree1, tree1.root, 'x');
+
+    tree1d.variables[0] = 10;
+    tree1d.variables[1] = 34;
+    tree1d.variables[2] = 25;
+
+    solution1 = TREE_SOLVE (&tree1d, tree1d.root);
+
+    printf ("SOLUTION: %lf\n", solution1);
+
+    free (temp);
+
+    fclose (input);
+
+    FILE* output = fopen ("dump_inf/g.gv1", "wr");
+
+    PRINTG_NODE(tree1.root , output);
+
+    fclose (output);
+
+    FILE* output1 = fopen ("dump_inf/text.txt", "wr");
+
+    PRINT_NODE (tree1d.root, output1);
+
+    fclose (output1);
+
+    NODE_DELETE (tree1.root);
+    NODE_DELETE (tree1d.root);
+
     return 0;
 }
 
@@ -89,9 +132,26 @@ NODE_t* NODE_READ (TREE_t* tree, char** current_pose, FILE* text) {
         }
         else if (isalpha(*buffer) && strlen(buffer) == 1) {
             node->type = VAR_T;
-            node->data.number = tree->free;
+            if (tree->free != 0) {
+                for (size_t ind = 0; ind <= tree->free; ind++) {
+                    if (fabs (tree->variables[ind] - *buffer) < DBL_EPSILON) {
+                        node->data.number = ind;
+                        break;
+                    }
+                    if (ind == tree->free) {
+                        node->data.number = tree->free;
+                        tree->variables[tree->free] = (double)*buffer;
+                        tree->free++;
+                        break;
+                    }
+                }   
+            }
+            else {
+                node->data.number = tree->free;
+                tree->variables[tree->free] = (*buffer);
+                tree->free++;
+            }
             node->value.name = *buffer;
-            tree->free++;
         }
         else {
             for (size_t ind = 0; ind < strlen(temp); ind++) {
@@ -237,6 +297,9 @@ void NODE_DELETE (NODE_t* node) {
 }
 
 void PRINT_NODE (NODE_t* node, FILE* output) {
+    assert (node);
+    assert (output);
+
     if (node) {
         fprintf (output, "(");
         if (node->type == 0) {
@@ -268,8 +331,11 @@ void PRINT_NODE (NODE_t* node, FILE* output) {
 }
 
 double TREE_SOLVE (TREE_t* tree, NODE_t* node) {
+    assert (tree);
+    assert (node);
+
     double solution = NAN;
-    if (node->type == 0) {
+    if (node->type == OP_T) {
         switch (node->data.op_name) {
             case (MUL):
                 solution = TREE_SOLVE(tree, node->left) * TREE_SOLVE(tree, node->right);
@@ -285,10 +351,22 @@ double TREE_SOLVE (TREE_t* tree, NODE_t* node) {
                 break;
             case (POW):
                 solution = pow(TREE_SOLVE(tree, node->left), TREE_SOLVE(tree, node->right));
-                break; 
+                break;
+            case (SIN):
+                solution = sin(TREE_SOLVE(tree, node->left));
+                break;
+            case (COS):
+                solution = cos(TREE_SOLVE(tree, node->left));
+                break;
+            case (TG) :
+                solution = tan(TREE_SOLVE(tree, node->left));
+                break;
+            case (LOG) :
+                solution = log(TREE_SOLVE(tree, node->left));
+                break;
         }
     }
-    else if (node->type == 1) {
+    else if (node->type == NUM_T) {
         solution = node->value.value;
     }
     else {
@@ -297,4 +375,106 @@ double TREE_SOLVE (TREE_t* tree, NODE_t* node) {
     return solution;
 }
 
+NODE_t* TREE_DIFFERENTIATE (TREE_t tree, NODE_t* node, char variable) {
+    NODE_t* new_node = (NODE_t*)calloc (1, sizeof (NODE_t));
 
+    assert (new_node);
+    if (node->type == NUM_T || (node->type == VAR_T && node->value.name != variable)) {
+        new_node->type = NUM_T;
+        new_node->value.value = 0;
+    }
+    else if (node->type == 2 && node->value.name == variable) {
+        new_node->type = NUM_T;
+        new_node->value.value = 1;
+    }
+    else {
+        switch (node->data.op_name) {
+            case (MUL):
+
+                new_node->type = OP_T;
+                new_node->data.op_name = ADD;
+                new_node->left = (NODE_t*)calloc(1, sizeof(NODE_t));
+                assert(new_node->left);
+                new_node->right = (NODE_t*)calloc(1, sizeof(NODE_t));
+                assert(new_node->right);
+
+                new_node->left->type = OP_T;
+                new_node->left->data.op_name = MUL;
+                new_node->left->left = TREE_DIFFERENTIATE (tree, node->left, variable);
+                new_node->left->right = COPY_NODE(node->right);
+
+                new_node->right->type = OP_T;
+                new_node->right->data.op_name = MUL;
+                new_node->right->right = TREE_DIFFERENTIATE (tree, node->right, variable);
+                new_node->right->left = COPY_NODE(node->left);
+                break;
+
+            case (ADD):
+                new_node->type = OP_T;
+                new_node->data.op_name = ADD;
+                new_node->left = TREE_DIFFERENTIATE (tree, node->left, variable);
+                new_node->right = TREE_DIFFERENTIATE (tree, node->right, variable);
+                break;
+            case (SUB):
+                new_node->type = OP_T;
+                new_node->data.op_name = SUB;
+                new_node->left = TREE_DIFFERENTIATE (tree, node->left, variable);
+                new_node->right = TREE_DIFFERENTIATE (tree, node->right, variable);
+                break;
+            /*case (DIV) :
+                solution = TREE_SOLVE(tree, node->left) / TREE_SOLVE(tree, node->right);
+                break;
+            case (POW):
+                solution = pow(TREE_SOLVE(tree, node->left), TREE_SOLVE(tree, node->right));
+                break;
+            case (SIN):
+                solution = sin(TREE_SOLVE(tree, node->left));
+                break;
+            case (COS):
+                solution = cos(TREE_SOLVE(tree, node->left));
+                break;
+            case (TG) :
+                solution = tan(TREE_SOLVE(tree, node->left));
+                break;
+            case (LOG) :
+                solution = log(TREE_SOLVE(tree, node->left));
+                break;*/
+        }
+    }
+    if (new_node->left) {
+        new_node->left->prev = new_node;
+    }
+    if (new_node->right) {
+        new_node->right->prev = new_node;
+    }
+
+    return new_node;
+}
+
+NODE_t* COPY_NODE (NODE_t* node) {
+    assert(node);
+    NODE_t* node_c = (NODE_t*)calloc (1, sizeof(NODE_t));\
+    assert(node_c);
+
+    node_c->type = node->type;
+    if (node->type == OP_T) {
+        node_c->data.op_name = node->data.op_name;
+    }  
+    else if (node->type == NUM_T) {
+        node_c->value.value = node->value.value;
+    }
+    else {
+        node_c->data.number = node->data.number;
+        node_c->value.name = node->value.name;
+    }
+
+    if (node->left) {
+        node_c->left = COPY_NODE (node->left);
+        node_c->left->prev = node_c;
+    }
+    if (node->right) {
+        node_c->right = COPY_NODE (node->right);
+        node_c->right->prev = node_c;
+    }
+    return (node_c);
+}
