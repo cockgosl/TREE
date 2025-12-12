@@ -11,5 +11,6 @@ void POW_DIF (TREE_t tree, NODE_t* node, NODE_t* new_node, char variable);
 void SIN_DIF (TREE_t tree, NODE_t* node, NODE_t* new_node, char variable);
 void COS_DIF (TREE_t tree, NODE_t* node, NODE_t* new_node, char variable);
 void TG_DIF (TREE_t tree, NODE_t* node, NODE_t* new_node, char variable);
+void LOG_DIF (TREE_t tree, NODE_t* node, NODE_t* new_node, char variable);
 
 

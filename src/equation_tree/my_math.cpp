@@ -83,9 +83,9 @@ NODE_t* TREE_DIFFERENTIATE (TREE_t tree, NODE_t* node, char variable) {
             case (TG) :
                 TG_DIF (tree, node, new_node, variable);
                 break;
-            /*case (LOG) :
-                solution = log(TREE_SOLVE(tree, node->left));
-                break;*/
+            case (LOG) :
+                LOG_DIF (tree, node, new_node, variable);
+                break;
         }
     }
     if (new_node->left) {
@@ -150,32 +150,46 @@ void DIV_DIF (TREE_t tree, NODE_t* node, NODE_t* new_node, char variable) {
     new_node->right->left = COPY_NODE(node->right);
 }
 
+void LOG_DIF (TREE_t tree, NODE_t* node, NODE_t* new_node, char variable) {
+    new_node->type = OP_T;
+    new_node->data.op_name = DIV;
+    
+    new_node->left = TREE_DIFFERENTIATE(tree, node->left, variable);
+
+    new_node->right = COPY_NODE(node->left);
+}
+
 void POW_DIF (TREE_t tree, NODE_t* node, NODE_t* new_node, char variable) {
     new_node->type = OP_T;
     new_node->data.op_name = MUL;
-    new_node->right = TREE_DIFFERENTIATE(tree, node->right, variable);
-    assert(new_node->right);
 
     new_node->left = (NODE_t*)calloc(1, sizeof(NODE_t));
     assert(new_node->left);
     new_node->left->type = OP_T;
-    new_node->left->data.op_name = MUL;
+    new_node->left->data.op_name = POW;
 
-    new_node->left->left = COPY_NODE(node->right);
+    new_node->left->left = (NODE_t*)calloc(1, sizeof(NODE_t));
+    assert(new_node->left->left);
+    new_node->left->left->type = NUM_T;
+    new_node->left->left->value.value = M_E;
+
     new_node->left->right = (NODE_t*)calloc(1, sizeof(NODE_t));
     assert(new_node->left->right);
     new_node->left->right->type = OP_T;
-    new_node->left->right->data.op_name = POW;
-    new_node->left->right->right = (NODE_t*)calloc(1, sizeof(NODE_t));
+    new_node->left->right->data.op_name = MUL;
+    new_node->left->right->right = COPY_NODE(node->right);
     assert(new_node->left->right->right);
-    new_node->left->right->left = COPY_NODE(node->left);
-    new_node->left->right->right->type = OP_T;
-    new_node->left->right->right->data.op_name = SUB;
-    new_node->left->right->right->right = (NODE_t*)calloc(1, sizeof(NODE_t));
-    assert(new_node->left->right->right->right);
-    new_node->left->right->right->left = COPY_NODE(node->right);
-    new_node->left->right->right->right->type = NUM_T;
-    new_node->left->right->right->right->value.value = 1;
+    new_node->left->right->left = (NODE_t*)calloc(1, sizeof(NODE_t));
+    assert(new_node->left->right->left);
+    new_node->left->right->left->type = OP_T;
+    new_node->left->right->left->data.op_name = LOG;
+    new_node->left->right->left->left = COPY_NODE(node->left);
+    assert(new_node->left->right->left->left);
+
+    new_node->right = (NODE_t*)calloc(1, sizeof(NODE_t));
+    assert(new_node->right);
+
+    MUL_DIF (tree, new_node->left->right, new_node->right, variable);
 }
 
 void SIN_DIF (TREE_t tree, NODE_t* node, NODE_t* new_node, char variable) {
