@@ -1,5 +1,16 @@
 #include "tree_shape.h"
 
+void TREE_INIT (TREE_t* tree) {
+    tree->free = (size_t*)calloc(1, sizeof(size_t));
+    tree->tokens = (TOKEN_t*)calloc (200, sizeof(TOKEN_t));
+}
+
+
+void TREE_DESTROY (TREE_t tree) {
+    free(tree.free);
+    free(tree.tokens);
+}
+
 NODE_t* NODE_READ (TREE_t* tree, char** current_pose, FILE* text) {
 
     if (strncmp(*current_pose + 1, "nil", strlen ("nil")) == 0) {
@@ -29,22 +40,22 @@ NODE_t* NODE_READ (TREE_t* tree, char** current_pose, FILE* text) {
         else if (isalpha(*buffer) && strlen(buffer) == 1) {
             node->type = VAR_T;
             if (tree->free != 0) {
-                for (size_t ind = 0; ind <= tree->free; ind++) {
+                for (size_t ind = 0; ind <= tree->free[0]; ind++) {
                     if (fabs (tree->variables[ind] - *buffer) < DBL_EPSILON) {
                         node->data.number = ind;
                         break;
                     }
-                    if (ind == tree->free) {
-                        node->data.number = tree->free;
-                        tree->variables[tree->free] = (double)*buffer;
+                    if (ind == tree->free[0]) {
+                        node->data.number = tree->free[0];
+                        tree->variables[tree->free[0]] = (double)*buffer;
                         tree->free++;
                         break;
                     }
                 }   
             }
             else {
-                node->data.number = tree->free;
-                tree->variables[tree->free] = (*buffer);
+                node->data.number = tree->free[0];
+                tree->variables[tree->free[0]] = (*buffer);
                 tree->free++;
             }
             node->value.name = *buffer;
@@ -116,6 +127,9 @@ void PRINTF_IN_DOT (NODE_t* node, FILE* output) {
     }
 }
 
+void PRINTGB_NODE (FILE* output) {
+    fprintf (output, "digraph G {\n");
+}
 void PRINTG_NODE (NODE_t* node, FILE* output) {
     if (node) {
 
@@ -161,6 +175,16 @@ void PRINTG_NODE (NODE_t* node, FILE* output) {
     else {
         printf ("there is no such node\n");
     }
+}
+
+void COMPLETE_PRINTG(NODE_t* node, FILE* output) {
+    PRINTGB_NODE(output);
+    PRINTG_NODE (node, output);
+    PRINTGE_NODE(output);
+}
+
+void PRINTGE_NODE (FILE* output) {
+    fprintf (output, "}");
 }
 
 void NODE_DELETE (NODE_t* node) {
@@ -253,3 +277,4 @@ NODE_t* COPY_NODE (NODE_t* node) {
     }
     return (node_c);
 }
+

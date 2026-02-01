@@ -17,6 +17,7 @@ enum TYPE {
 };
 
 enum OPERATION {
+    NONE = '0',
     ADD = '+',
     SUB = '-',
     MUL = '*',
@@ -38,6 +39,11 @@ union DATA_t {
     size_t number;
 };
 
+struct TOKEN_t {
+    int num = 0;
+    OPERATION op = NONE;
+};
+
 struct NODE_t {
     NODE_t* prev = NULL;
     NODE_t* left = NULL;
@@ -50,7 +56,8 @@ struct NODE_t {
 struct TREE_t {
     NODE_t* root;
     double variables[100] = {};
-    size_t free = 0;
+    struct TOKEN_t* tokens = NULL;
+    size_t* free = NULL;
 };
 
 NODE_t* NODE_READ (TREE_t* tree, char** current_pose, FILE* text);
@@ -60,5 +67,10 @@ char* READ_BUFFER (FILE* text);
 void NODE_DELETE (NODE_t* node);
 void PRINT_NODE (NODE_t* node, FILE* output);
 NODE_t* COPY_NODE (NODE_t* node);
+void COMPLETE_PRINTG(NODE_t* node, FILE* output);
+void PRINTGB_NODE (FILE* output);
+void PRINTGE_NODE (FILE* output);
+void TREE_INIT (TREE_t* tree);
+void TREE_DESTROY (TREE_t tree);
 
 #endif 
