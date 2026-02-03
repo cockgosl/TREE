@@ -5,124 +5,196 @@
 #include "tree_shape.h"
 
 void SYNTAX_ERROR();
-int GET_N(TREE_t tree);
-int GET_P(TREE_t tree);
-int GET_T(TREE_t tree);
-int GET_E(TREE_t tree);
-int GET_G(TREE_t tree);
-
-char* s = "(5+8)/4";
+NODE_t* GET_N(TREE_t tree, size_t* index);
+NODE_t* GET_P(TREE_t tree, size_t* index);
+NODE_t* GET_T(TREE_t tree, size_t* index);
+NODE_t* GET_E(TREE_t tree, size_t* index);
+NODE_t* GET_G(TREE_t tree, size_t* index);
 
 int main() {
     TREE_t tree_test = {};
+    size_t index = 0;
+
 
     TREE_INIT(&tree_test);
 
-    int value = GET_G(tree_test);
-    printf("the answer is %d\n", value);
+    FILE* input = fopen ("dump_inf/log/input.txt", "r");
+    assert (input);
+    TOKENS_C (input, &tree_test);
 
-    for (size_t i = 0; i < 4; i++) {
-        printf ("number %ld = %d, op %ld = %d\n", i, tree_test.tokens[i].num, i , tree_test.tokens[i].op);
-    }
+
+    fclose (input);
+
+    tree_test.root = GET_G(tree_test, &index);
+
+    FILE* output = fopen ("dump_inf/graphic/g.gv1", "wr");
+    
+    COMPLETE_PRINTG(tree_test.root, output);
+
+    fclose (output);
+
+    double answer = TREE_SOLVE (&tree_test, tree_test.root);
+    printf ("the answer is %f\n", answer);
 
     TREE_DESTROY(tree_test);
 }
 
-int GET_N (TREE_t tree) {
-    int val = 0;
-    size_t sign = 0;
-    while ('0' <= *s && *s <= '9') {
-        val = val*10 + *s - '0';
-        sign++;
-        s += sizeof(char);
-    }
+NODE_t* GET_N (TREE_t tree, size_t* index) {
 
-    if (sign == 0) {
-        SYNTAX_ERROR();
-    }
-
-    tree.tokens[tree.free[0]].num = val;
-    tree.free[0]++;
+    NODE_t* val = tree.tokens + *index;
+    (*index)++;
 
     return val;
 }
 
-int GET_P (TREE_t tree) {
-    int val = 0;
-    if (*s == '(') {
-        s += sizeof(char);
-        val = GET_E(tree);
-        if (*s == ')') {
-            s += sizeof(char);
+NODE_t* GET_P (TREE_t tree, size_t* index) {
+    NODE_t* val = NULL;
+
+    if (tree.tokens[*index].data.op_name == '(') {
+
+        (*index)++;
+        val = GET_E(tree, index);
+        if (tree.tokens[*index].data.op_name == ')') {
+            (*index)++;
         }
         else {
             SYNTAX_ERROR();
         } 
     }
     else {
-        val = GET_N(tree);
+
+        val = GET_N(tree, index);
     }
+
     return val;
 }
 
-int GET_T(TREE_t tree) {
-    int val = GET_P(tree);
-    int val1 = 0;
-    char op = *s;
+NODE_t* GET_T(TREE_t tree, size_t* index) {
+    NODE_t* val = GET_P(tree, index);
+    NODE_t* val1 = NULL;
+    size_t op = *index;
     
-    while (*s == '*' || *s == '/') {
-        s += sizeof(char);
-        val1 = GET_P(tree);
-        if (op == '*') {
-            val *= val1;
-            tree.tokens[tree.free[0]].op = MUL;
-            tree.free[0]++;
+    while (tree.tokens[*index].data.op_name == '*' || tree.tokens[*index].data.op_name == '/') {
+        (*index)++;
+        val1 = GET_P(tree, index);
+        if (tree.tokens[op].data.op_name == '*') {
+            tree.tokens[op].right = val1;
+            tree.tokens[op].left = val;
+            val = tree.tokens + op;
         }
-        else if (op == '/') {
-            val /= val1;
-            tree.tokens[tree.free[0]].op = DIV;
-            tree.free[0]++;
+        else if (tree.tokens[op].data.op_name == '/') {
+            tree.tokens[op].right = val1;
+            tree.tokens[op].left = val;
+            val = tree.tokens + op;
         }
-        op = *s;
+        op = *index;
+    }
+
+    return val;
+}
+
+NODE_t* GET_E(TREE_t tree, size_t* index) {
+    NODE_t* val = GET_T(tree, index);
+    NODE_t* val1 = NULL;
+    size_t op = *index;
+    
+    while (tree.tokens[*index].data.op_name == '+' || tree.tokens[*index].data.op_name == '-') {
+        (*index)++;
+        val1 = GET_T(tree, index);
+        if (tree.tokens[op].data.op_name == '+') {
+            tree.tokens[op].right = val1;
+            tree.tokens[op].left = val;
+            val = tree.tokens + op;
+        }
+        else if (tree.tokens[op].data.op_name == '-') {
+            tree.tokens[op].right = val1;
+            tree.tokens[op].left = val;
+            val = tree.tokens + op;
+        }
+        op = *index;
     }
 
 
     return val;
 }
 
-int GET_E(TREE_t tree) {
-    int val = GET_T (tree);
-    int val1 = 0;
-    char op = *s;
-    while (*s == '+' || *s == '-') {
-        s += sizeof(char);
-        val1 = GET_T(tree);
-        if (op == '+') {
-            val += val1;
-            tree.tokens[tree.free[0]].op = ADD;
-            tree.free[0]++;
-        }
-        else if (op == '-') {
-            val -= val1;
-            tree.tokens[tree.free[0]].op = SUB;
-            tree.free[0]++;
-        }
-        op = *s;
-    }
-    return val;
-}
+NODE_t* GET_G(TREE_t tree, size_t* index) {
 
-int GET_G(TREE_t tree) {
+    NODE_t* val = GET_E(tree, index);
 
-    int val = GET_E(tree);
 
-    if (*s == '\0') {
-        return val;
+    if (tree.tokens[*index].type == UNDEF) {
+       return val;
     }
     else {
         SYNTAX_ERROR();
     }
-    return 0;
+    return val;
+}
+
+void TOKENS_C (FILE* input, TREE_t* tree) {
+    size_t size = 0;
+    size_t counter = 0;
+    int val = 0;
+    char* s = READ_BUFFER (input, &size);
+    char* temp = s;
+    while (*s != '\0' && counter < size) {
+        counter++;
+        if ('0' <= *s && *s <= '9') {
+            while ('0' <= *s && *s <= '9') {
+            val = val*10 + *s - '0';
+            s += sizeof(char);
+            }
+            tree->tokens[tree->free[0]].type = NUM_T;
+            tree->tokens[tree->free[0]].value.value = val;
+            tree->tokens[tree->free[0]].number = tree->free[0];
+            tree->free[0]++;
+            val = 0;
+        }
+        else if (*s == '(') {
+            s += sizeof(char);
+            tree->tokens[tree->free[0]].type = OP_T;
+            tree->tokens[tree->free[0]].data.op_name = FBRACKET;
+            tree->tokens[tree->free[0]].number = tree->free[0];
+            tree->free[0]++;
+        }
+        else if (*s == ')') {
+            s += sizeof(char);
+            tree->tokens[tree->free[0]].type = OP_T;
+            tree->tokens[tree->free[0]].data.op_name = LBRACKET;
+            tree->tokens[tree->free[0]].number = tree->free[0];
+            tree->free[0]++;
+        }
+        else if (*s == '*') {
+            s += sizeof(char);
+            tree->tokens[tree->free[0]].type = OP_T;
+            tree->tokens[tree->free[0]].data.op_name = MUL;
+            tree->tokens[tree->free[0]].number = tree->free[0];
+            tree->free[0]++;
+        }
+        else if (*s == '/') {
+            s += sizeof(char);
+            tree->tokens[tree->free[0]].type = OP_T;
+            tree->tokens[tree->free[0]].data.op_name = DIV;
+            tree->tokens[tree->free[0]].number = tree->free[0];
+            tree->free[0]++;
+        }
+        else if (*s == '+') {
+            s += sizeof(char);
+            tree->tokens[tree->free[0]].type = OP_T;
+            tree->tokens[tree->free[0]].data.op_name = ADD;
+            tree->tokens[tree->free[0]].number = tree->free[0];
+            tree->free[0]++;
+        }
+        else if (*s == '-') {
+            s += sizeof(char);
+            tree->tokens[tree->free[0]].type = OP_T;
+            tree->tokens[tree->free[0]].data.op_name = SUB;
+            tree->tokens[tree->free[0]].number = tree->free[0];
+            tree->free[0]++;
+        }
+    }
+    free (temp);
 }
 
 void SYNTAX_ERROR() {

@@ -2,7 +2,7 @@
 
 void TREE_INIT (TREE_t* tree) {
     tree->free = (size_t*)calloc(1, sizeof(size_t));
-    tree->tokens = (TOKEN_t*)calloc (200, sizeof(TOKEN_t));
+    tree->tokens = (NODE_t*)calloc (200, sizeof(NODE_t));
 }
 
 
@@ -74,25 +74,16 @@ NODE_t* NODE_READ (TREE_t* tree, char** current_pose, FILE* text) {
 
         node->left = NODE_READ (tree, current_pose, text);
 
-        if (node->left) {
-            node->left->prev = node;
-        }
 
         node->right = NODE_READ (tree, current_pose, text);
-
-        if (node->right) {
-            node->right->prev = node;
-        }
 
         return node;
     }
     return NULL;
 }
 
-char* READ_BUFFER (FILE* text) {
+char* READ_BUFFER (FILE* text, size_t* size) {
     assert (text);
-
-    size_t size = 0;
 
     struct stat statistic = {};
 
@@ -100,26 +91,26 @@ char* READ_BUFFER (FILE* text) {
     int descriptor = fileno(text); 
     fstat (descriptor, &statistic);    
 
-    size = statistic.st_size;
+    *size = statistic.st_size;
 
-    buffer = (char*) calloc (sizeof (char), size + sizeof(char));
+    buffer = (char*) calloc (sizeof (char), *size + sizeof(char));
     if (buffer) {
-        buffer[size] = '\0';
-        fread (buffer, sizeof(char), size, text);
+        buffer[*size] = '\0';
+        fread (buffer, sizeof(char), *size, text);
     }
     else {
         fprintf (stderr, "memory cannot be allocated");
-        assert(buffer);
+        return 0;
     }
     
     return buffer;   
 }
 
 void PRINTF_IN_DOT (NODE_t* node, FILE* output) {
-    if (node->type == 0) {
+    if (node->type == 1) {
             fprintf (output, "   \"%p\" [shape = record, color = \"black\", label=\" {addr = %p |type = OP_T |data = %c |left = %p | right = %p }\"];\n", node, node, node->data.op_name , node->left, node->right);
         }
-    else if (node->type == 1) {
+    else if (node->type == 2) {
         fprintf (output, "   \"%p\" [shape = record, color = \"black\", label=\" {addr = %p |type = NUM_T |data = %lf |left = %p | right = %p }\"];\n", node, node, node->value.value , node->left, node->right);
     }
     else {
@@ -142,12 +133,8 @@ void PRINTG_NODE (NODE_t* node, FILE* output) {
             fprintf (output, "   \"%p\"->\"%d\"\n", node, temp);
             temp = rand();
         }
-        else if (node->left->prev == node ) {
-            PRINTF_IN_DOT (node->left, output);
-            fprintf (output, "   \"%p\"->\"%p\"\n", node, node->left);
-        }
         else {
-            fprintf (output, "   \"%p\" [shape = record, color = \"red\", label=\" {addr = %p | data = POIZON  | left = POIZON | right = POIZON }\"];\n" ,node->left, node->left);
+            PRINTF_IN_DOT (node->left, output);
             fprintf (output, "   \"%p\"->\"%p\"\n", node, node->left);
         }
 
@@ -156,12 +143,8 @@ void PRINTG_NODE (NODE_t* node, FILE* output) {
             fprintf (output, "   \"%p\"->\"%d\"\n", node, temp);
             temp = rand();
         }
-        else if (node->right->prev == node) { 
+        else { 
             PRINTF_IN_DOT (node->right, output);
-            fprintf (output, "   \"%p\"->\"%p\"\n", node, node->right);
-        }
-        else {
-            fprintf (output, "   \"%p\" [shape = record, color = \"red\", label=\" {addr = %p | data = POIZON  | left = POIZON | right = POIZON }\"];\n" ,node->right, node->right);
             fprintf (output, "   \"%p\"->\"%p\"\n", node, node->right);
         }
 
@@ -197,18 +180,6 @@ void NODE_DELETE (NODE_t* node) {
             NODE_DELETE (node->left);
             node->left = NULL;
         }
-        if (node->prev) {
-            if (node->prev->right == node) {
-                node->prev->right = NULL;
-            }
-            else if (node->prev->left == node) {
-                node->prev->left = NULL;
-            }
-            else {
-                fprintf (stderr, "the tie is wrong\n");
-                abort();
-            }
-        }
         free (node);
     }
     else {
@@ -222,10 +193,10 @@ void PRINT_NODE (NODE_t* node, FILE* output) {
 
     if (node) {
         fprintf (output, "(");
-        if (node->type == 0) {
+        if (node->type == OP_T) {
             fprintf (output, "%c", node->data.op_name);
         }
-        else if (node->type == 1) {
+        else if (node->type == NUM_T) {
             fprintf (output, "%lf", node->value.value);
         }
         else {
